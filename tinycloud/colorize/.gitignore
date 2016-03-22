@@ -1,0 +1,9 @@
+checkpoint-*
+checkpoint
+train-loss.csv
+val-loss.csv
+val-imgs
+vgg16-v*.tfmodel
+*.swp
+*.pyc
+log

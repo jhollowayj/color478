@@ -39,6 +39,7 @@ def load_image(path, allow_bw=False):
 
 class DataSet(object):
     def __init__(self, dir_txt):
+	print "Looking for Directory: {}".format(dir_txt)
         self.data_dir = os.path.splitext(dir_txt)[0]
         self._filenames = []
         with open(dir_txt, 'r') as f:
@@ -85,7 +86,7 @@ class DataSet(object):
                 if self._index_in_epoch >= len(self._filenames):
                     self.epoch_complete()
             except ValueError:
-                #print "error loading", fn
+                print "error loading", fn
                 del self._filenames[self._index_in_epoch]
 
         batch = np.stack(imgs)

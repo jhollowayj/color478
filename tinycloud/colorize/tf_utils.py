@@ -1,63 +1,5 @@
 import tensorflow as tf
-from tensorflow.python.framework import ops
 import numpy as np
-
-
-def depth(layer):
-    return layer.get_shape().as_list()[3]
-
-def rgb_inference(gray, color, name=None):
-    assert depth(gray) == 1
-    assert depth(color) == 2
-    yuv = tf.concat(3, [gray, color])
-    return yuv2rgb(yuv, name=name)
-
-def rgb2uv(rgb):
-    yuv = rgb2yuv(rgb)
-    _, u, v = tf.split(3, 3, yuv)
-    return tf.concat(3, [u, v])
-
-def l1_dist(a, b):
-    return tf.reduce_mean(tf.abs(a - b))
-
-def l2_dist_squared(a, b):
-    return tf.reduce_mean(tf.square(a - b))
-
-# eucledian distance 
-def dist2(a, b):
-    sq_diff = tf.square(a - b)
-    sums = tf.reduce_sum(sq_diff, [1,2])
-    dists = tf.sqrt(sums)
-    return tf.reduce_mean(dists)
-
-# Returns three channel rgb image that is desaturated.
-def desaturate(rgb):
-    # take average value to desaturate.
-    red, green, blue = tf.split(3, 3, rgb)
-    return (red + green + blue) / 3
-
-def upsample(value, repeat=2):
-    #return tf.user_ops.upsample(value, repeat=repeat) 
-    tensor = tf.convert_to_tensor(value)
-    in_shape = tensor.get_shape().as_list()
-    h = in_shape[1]
-    w = in_shape[2]
-    return tf.image.resize_bilinear(tensor, [ h * repeat, w * repeat ])
-
-def binary_cross_entropy_with_logits(logits, targets, name=None):
-    """Computes binary cross entropy given `logits`.
-    For brevity, let `x = logits`, `z = targets`.  The logistic loss is
-        loss(x, z) = - sum_i (x[i] * log(z[i]) + (1 - x[i]) * log(1 - z[i]))
-    Args:
-        logits: A `Tensor` of type `float32` or `float64`.
-        targets: A `Tensor` of the same type and shape as `logits`.
-    """
-    eps = 1e-12
-    with ops.op_scope([logits, targets], name, "bce_loss") as name:
-        logits = ops.convert_to_tensor(logits, name="logits")
-        targets = ops.convert_to_tensor(targets, name="targets")
-        return tf.reduce_mean(-(logits * tf.log(targets + eps) +
-                              (1. - logits) * tf.log(1. - targets + eps)))
 
 def _get_image(batch, index):
   shape = batch.get_shape().as_list()
@@ -235,19 +177,3 @@ def blur(img, n=5):
         k[:,:,i,i] = gaussianKernel(n) ## i suck at numpy
     filt = tf.constant(k, dtype=tf.float32)
     return tf.nn.conv2d(img, filt, [1,1,1,1], padding="SAME")
-
-def blur_uv_loss(rgb, inferred_rgb):
-    uv = rgb2uv(rgb)
-    uv_blur0 = rgb2uv(blur(rgb, 3))
-    uv_blur1 = rgb2uv(blur(rgb, 5))
-
-    inferred_uv = rgb2uv(inferred_rgb)
-    inferred_uv_blur0 = rgb2uv(blur(inferred_rgb, 3))
-    inferred_uv_blur1 = rgb2uv(blur(inferred_rgb, 5))
-
-    dist = l2_dist_squared
-
-    return ( dist(inferred_uv, uv) +
-             dist(inferred_uv_blur0 , uv_blur0) +
-             dist(inferred_uv_blur1, uv_blur1) ) / 3
-
